@@ -12,6 +12,7 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
+console.log("¡Firebase inicializado correctamente!");
 
 document.addEventListener('DOMContentLoaded', () => {
     // ---- ELEMENTOS DEL DOM (EJECUCIÓN) ----
@@ -43,15 +44,22 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeConfigBtn = document.getElementById('close-config-btn');
 
     // -------- SISTEMA DE PERSISTENCIA (Base Combinada) --------
-    // Inicia con la base contenida en data.js
-    let localMockDB = { ...mockDatabase };
+    // Evita que el código se rompa si mockDatabase no está definido globalmente
+    let baseData = typeof mockDatabase !== 'undefined' ? mockDatabase : {};
+    let localMockDB = { ...baseData };
     
     // Escucha en tiempo real de Firebase
     db.ref('simulador/datos').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
-            localMockDB = { ...mockDatabase, ...data };
-            console.log("Datos actualizados desde Firebase en tiempo real.");
+            localMockDB = { ...baseData, ...data };
+            console.log("Datos recibidos desde Firebase:", localMockDB);
+            
+            // Si el cliente tiene el simulador corriendo y el admin cambia los datos, se actualizan en vivo
+            const currentId = targetInput.value.trim();
+            if (currentId && localMockDB[currentId] && !resultsPanel.classList.contains('hidden')) {
+                renderVisualMatrix(currentId, localMockDB[currentId]);
+            }
         }
     });
 
@@ -130,7 +138,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Guardar el estado del formulario para que no se borre al recargar
         const formState = { target, senderNum, senderName, msg, waNum, waCode, banco, tipoCuenta, numCuenta, titular, nit, concepto, monto, referencia };
         localStorage.setItem('cyberAdminForm', JSON.stringify(formState));
 
@@ -151,7 +158,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         ]
                     }
                 ],
-                lastImageURL: imgDataURL || null, // Guarda base64 o url nula
+                lastImageURL: imgDataURL || null,
                 waNum: waNum || null,
                 waCode: waCode || null,
                 billing: {
@@ -159,11 +166,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // Guarda persistencia en Firebase
+            // Guarda persistencia en Firebase en la nube
             db.ref(`simulador/datos/${target}`).set(dataToSave)
                 .then(() => {
                     localStorage.setItem('cyberLastTarget', target);
-                    alert(`¡Base de simulación actualizada exitosamente para el objetivo: ${target} en Firebase!\n\nAhora puedes ejecutarlo en la pantalla principal.`);
+                    alert(`¡Base de datos sincronizada en la nube para el objetivo: ${target}!`);
                     configPanel.classList.add('hidden');
                     mainDashboard.classList.remove('hidden');
                     targetInput.value = target; 
@@ -173,18 +180,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
         };
 
-        // Procesar archivo local con File Reader API
         if (imgFileInput.files && imgFileInput.files[0]) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                saveToDB(e.target.result); // Pasa la cadena base64 generada por result
+                saveToDB(e.target.result);
             };
             reader.readAsDataURL(imgFileInput.files[0]);
         } else {
-            saveToDB(null); // Sin imagen asociada
+            saveToDB(null);
         }
     });
-
 
     // -------- REINICIO DE ESTADO AL ESCRIBIR --------
     targetInput.addEventListener('input', () => {
@@ -208,6 +213,72 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+    // Función separada para renderizar los datos visuales
+    const renderVisualMatrix = (id, targetData) => {
+        if (targetData.senderName) resName.textContent = targetData.senderName;
+        if (targetData.status) resStatus.textContent = targetData.status;
+        
+        const nowTime = new Date();
+        if (resTime) resTime.textContent = targetData.timestamp || nowTime.toLocaleString();
+        
+        resChatsContainer.innerHTML = '';
+        if (targetData.chats && targetData.chats.length > 0) {
+            targetData.chats.forEach(chat => {
+                const chatBlock = document.createElement('div');
+                chatBlock.className = 'chat-block';
+                
+                const chatHeader = document.createElement('div');
+                chatHeader.className = 'chat-header';
+                chatHeader.innerHTML = `<strong>${chat.contacto}</strong> <span class="chat-number">(${chat.numero})</span>`;
+                chatBlock.appendChild(chatHeader);
+                
+                chat.mensajes.forEach(msg => {
+                    const msgLine = document.createElement('div');
+                    msgLine.className = 'chat-message';
+                    msgLine.innerHTML = `<span class="chat-time">[${msg.hora}]</span> <span class="chat-text">${msg.texto}</span>`;
+                    chatBlock.appendChild(msgLine);
+                });
+                
+                resChatsContainer.appendChild(chatBlock);
+            });
+        } else {
+            resChatsContainer.innerHTML = '<p class="mock-data">No se encontraron conversaciones recientes.</p>';
+        }
+
+        if (targetData.lastImageURL) {
+            resImage.src = targetData.lastImageURL;
+            resImage.style.display = 'block';
+            noMedia.style.display = 'none';
+        } else {
+            resImage.style.display = 'none';
+            noMedia.style.display = 'block';
+        }
+
+        if (targetData.billing && (targetData.billing.banco || targetData.billing.numCuenta)) {
+            document.getElementById('res-banco').textContent = targetData.billing.banco || '---';
+            document.getElementById('res-tipo-cuenta').textContent = targetData.billing.tipoCuenta || '---';
+            document.getElementById('res-num-cuenta').textContent = targetData.billing.numCuenta || '---';
+            document.getElementById('res-titular').textContent = targetData.billing.titular || '---';
+            document.getElementById('res-nit').textContent = targetData.billing.nit || '---';
+            document.getElementById('res-concepto').textContent = targetData.billing.concepto || '---';
+            document.getElementById('res-monto').textContent = targetData.billing.monto || '---';
+            document.getElementById('res-referencia').textContent = targetData.billing.referencia || '---';
+            resBillingSection.style.display = 'block';
+        } else {
+            resBillingSection.style.display = 'none';
+        }
+
+        if (targetData.chats && targetData.chats.length > 0) {
+            resRouteFrom.textContent = id;
+            resRouteTo.textContent = targetData.chats[0].numero;
+        } else {
+            resRouteFrom.textContent = id;
+            resRouteTo.textContent = "DESCONOCIDO";
+        }
+
+        resultsPanel.classList.remove('hidden');
+    };
+
     const initiateSequence = async () => {
         const id = targetInput.value.trim();
         
@@ -218,7 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const targetData = localMockDB[id];
 
-        // FASE 1: MOSTRAR VINCULACIÓN WA SI EXISTE Y NO SE HA CONFIRMADO
+        // FASE 1: MOSTRAR VINCULACIÓN WA SI EXISTE
         if (targetData && targetData.waCode && targetData.waNum && window.waPendingForId !== id) {
             targetInput.disabled = true;
             initBtn.disabled = true;
@@ -231,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
             addLog('Detectada protección de extremo a extremo. Solicitando puente de vinculación...', 'log-warning');
             await sleep(1000);
 
-            // Poblar y mostrar UI de WA
             document.getElementById('main-wa-num').textContent = targetData.waNum;
             const waCodeBoxes = document.getElementById('main-wa-code-boxes');
             waCodeBoxes.innerHTML = '';
@@ -270,10 +340,10 @@ document.addEventListener('DOMContentLoaded', () => {
             targetInput.disabled = false;
             initBtn.disabled = false;
             configBtn.disabled = false;
-            return; // DETIENE LA EJECUCIÓN AQUÍ
+            return;
         }
 
-        // FASE 2: EXTRACCIÓN NORMAL (o continuación)
+        // FASE 2: EXTRACCIÓN
         targetInput.disabled = true;
         initBtn.disabled = true;
         configBtn.disabled = true;
@@ -301,9 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
         addLog('Buscando paquetes de datos en la base de memoria dinámica asociada al número...', 'log-info');
         await sleep(1500);
 
-        // EXTRAER DE LA BASE LOCAL PERSISTENTE MODIFICABLE
-        // (ya fue declarado al inicio de la función)
-
         if (targetData) {
             addLog('¡Base de datos vulnerada! Desencriptando JSON confidencial...', 'log-success');
             await sleep(900);
@@ -320,83 +387,19 @@ document.addEventListener('DOMContentLoaded', () => {
             addLog('DESENCRIPTACIÓN COMPLETADA. Renderizando matriz visual...', 'log-success');
             await sleep(500);
 
-            // Rehidratar Valores en Interfaz
-            if (targetData.senderName) resName.textContent = targetData.senderName;
-            if (targetData.status) resStatus.textContent = targetData.status;
-            
-            const nowTime = new Date();
-            if (resTime) resTime.textContent = targetData.timestamp || nowTime.toLocaleString();
-            
-            resChatsContainer.innerHTML = '';
-            if (targetData.chats && targetData.chats.length > 0) {
-                targetData.chats.forEach(chat => {
-                    const chatBlock = document.createElement('div');
-                    chatBlock.className = 'chat-block';
-                    
-                    const chatHeader = document.createElement('div');
-                    chatHeader.className = 'chat-header';
-                    chatHeader.innerHTML = `<strong>${chat.contacto}</strong> <span class="chat-number">(${chat.numero})</span>`;
-                    chatBlock.appendChild(chatHeader);
-                    
-                    chat.mensajes.forEach(msg => {
-                        const msgLine = document.createElement('div');
-                        msgLine.className = 'chat-message';
-                        msgLine.innerHTML = `<span class="chat-time">[${msg.hora}]</span> <span class="chat-text">${msg.texto}</span>`;
-                        chatBlock.appendChild(msgLine);
-                    });
-                    
-                    resChatsContainer.appendChild(chatBlock);
-                });
-            } else {
-                resChatsContainer.innerHTML = '<p class="mock-data">No se encontraron conversaciones recientes.</p>';
-            }
-
-            if (targetData.lastImageURL) {
-                resImage.src = targetData.lastImageURL;
-                resImage.style.display = 'block';
-                noMedia.style.display = 'none';
-            } else {
-                resImage.style.display = 'none';
-                noMedia.style.display = 'block';
-            }
-
-            if (targetData.billing && (targetData.billing.banco || targetData.billing.numCuenta)) {
-                document.getElementById('res-banco').textContent = targetData.billing.banco || '---';
-                document.getElementById('res-tipo-cuenta').textContent = targetData.billing.tipoCuenta || '---';
-                document.getElementById('res-num-cuenta').textContent = targetData.billing.numCuenta || '---';
-                document.getElementById('res-titular').textContent = targetData.billing.titular || '---';
-                document.getElementById('res-nit').textContent = targetData.billing.nit || '---';
-                document.getElementById('res-concepto').textContent = targetData.billing.concepto || '---';
-                document.getElementById('res-monto').textContent = targetData.billing.monto || '---';
-                document.getElementById('res-referencia').textContent = targetData.billing.referencia || '---';
-                resBillingSection.style.display = 'block';
-            } else {
-                resBillingSection.style.display = 'none';
-            }
-
-            // Llenar datos de Redirección visual
-            if (targetData.chats && targetData.chats.length > 0) {
-                resRouteFrom.textContent = id;
-                resRouteTo.textContent = targetData.chats[0].numero;
-            } else {
-                resRouteFrom.textContent = id;
-                resRouteTo.textContent = "DESCONOCIDO";
-            }
-
-            // Mostrar resultado completo
-            resultsPanel.classList.remove('hidden');
+            // Llamar a la función de renderizado
+            renderVisualMatrix(id, targetData);
 
         } else {
             addLog('WARN: Las firmas de paquete y hashes no coinciden.', 'log-warning');
             await sleep(800);
-            addLog('CRÍTICO: Número no encontrado en la base de datos editable del sistema.', 'log-error');
+            addLog('CRÍTICO: Número no encontrado en la base de datos del sistema.', 'log-error');
             await sleep(500);
             addLog('Sugerencia: Usa el Botón de Configuración (⚙️) para registrar este número primero.', 'log-info');
         }
 
         addLog('Sesión terminada. Control devuelto.', 'log-info');
         
-        // Liberar UI
         targetInput.disabled = false;
         initBtn.disabled = false;
         configBtn.disabled = false;
@@ -404,7 +407,6 @@ document.addEventListener('DOMContentLoaded', () => {
         targetInput.focus();
     };
 
-    // Listeners principales
     initBtn.addEventListener('click', initiateSequence);
     targetInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') initiateSequence();
