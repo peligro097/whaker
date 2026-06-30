@@ -1,0 +1,494 @@
+:root {
+    --bg-color: #050505;
+    --terminal-bg: #0a0e0a;
+    --primary-color: #00ff41; /* Hacker Green */
+    --secondary-color: #008f11;
+    --accent-color: #00ffff; /* Cyber Cyan */
+    --error-color: #ff003c;
+    --text-color: #e0e0e0;
+    --font-mono: 'Fira Code', 'Courier New', monospace;
+    --font-header: 'Orbitron', 'Fira Code', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--primary-color);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 2rem;
+    overflow-x: hidden;
+    position: relative;
+    /* Un look tipo terminal oscuro puro de fondo */
+    background-image: radial-gradient(circle at center, #0a110a 0%, #000000 100%);
+}
+
+/* CRT Overlay Effect */
+.crt-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle, rgba(0,0,0,0) 60%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+    z-index: 100;
+}
+
+.scanline {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,255,65,0.02) 50%, rgba(0,255,65,0.02));
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 99;
+    opacity: 0.6;
+}
+
+.container {
+    width: 100%;
+    max-width: 900px;
+    background: rgba(5, 5, 5, 0.85);
+    border: 1px solid var(--secondary-color);
+    box-shadow: 0 0 25px rgba(0, 255, 65, 0.15);
+    padding: 2.5rem;
+    position: relative;
+    z-index: 10;
+    border-radius: 4px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--secondary-color);
+    padding-bottom: 1rem;
+    margin-bottom: 2rem;
+}
+
+.header-content {
+    flex: 1;
+    text-align: center;
+}
+
+.config-btn {
+    background: transparent;
+    border: 1px solid var(--secondary-color);
+    font-size: 1.5rem;
+    padding: 0.5rem;
+    cursor: pointer;
+    color: var(--secondary-color);
+    transition: all 0.3s ease;
+    border-radius: 4px;
+}
+.config-btn:hover {
+    background: var(--secondary-color);
+    color: #000;
+    box-shadow: 0 0 10px var(--secondary-color);
+}
+
+/* Panel de Configuración */
+.config-panel {
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px dashed var(--accent-color);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.1);
+}
+
+.config-panel .subtitle {
+    color: #888;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+}
+
+textarea {
+    width: 100%;
+    background: #000;
+    border: 1px solid var(--primary-color);
+    color: var(--text-color);
+    font-family: var(--font-mono);
+    padding: 0.8rem;
+    outline: none;
+    resize: vertical;
+    box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.2);
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.save-btn { background: var(--accent-color); color: #000; border-color: var(--accent-color); }
+.save-btn:hover { box-shadow: 0 0 15px var(--accent-color); }
+.close-btn { background: transparent; color: var(--error-color); border-color: var(--error-color); }
+.close-btn:hover { background: var(--error-color); color: #fff; box-shadow: 0 0 15px var(--error-color); }
+
+input[type="file"] {
+    background: transparent;
+    color: var(--primary-color);
+    font-family: var(--font-mono);
+    padding: 0.5rem 0;
+    cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+    background: var(--primary-color);
+    color: #000;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-family: var(--font-header);
+    font-weight: bold;
+    cursor: pointer;
+    margin-right: 1rem;
+    transition: all 0.3s ease;
+}
+
+input[type="file"]::file-selector-button:hover {
+    background: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-color);
+}
+
+.hidden { display: none !important; }
+
+h1 {
+    font-family: var(--font-header);
+    color: var(--primary-color);
+    text-shadow: 0 0 10px var(--primary-color);
+    letter-spacing: 2px;
+    font-size: 1.8rem;
+    margin-bottom: 0.5rem;
+}
+
+.status {
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+.online {
+    color: var(--primary-color);
+    animation: blink 2s infinite;
+}
+
+/* User Input */
+.control-panel {
+    margin-bottom: 2rem;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: var(--accent-color);
+    font-weight: bold;
+    text-shadow: 0 0 5px var(--accent-color);
+}
+
+.input-wrapper {
+    display: flex;
+    align-items: center;
+    background: #000;
+    border: 1px solid var(--primary-color);
+    padding: 0.5rem;
+    box-shadow: inset 0 0 15px rgba(0, 255, 65, 0.2);
+}
+
+.prompt {
+    color: var(--primary-color);
+    margin-right: 0.5rem;
+    font-weight: bold;
+}
+
+input[type="text"] {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--primary-color);
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    outline: none;
+}
+
+input[type="text"]::placeholder {
+    color: rgba(0, 255, 65, 0.4);
+}
+
+button {
+    background: var(--primary-color);
+    color: #000;
+    border: 1px solid var(--primary-color);
+    padding: 0.6rem 2rem;
+    font-family: var(--font-header);
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+}
+
+button:hover {
+    background: var(--accent-color);
+    color: #000;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 15px var(--accent-color);
+}
+button:disabled {
+    background: #222;
+    color: #555;
+    border-color: #444;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+/* Fake Terminal Logs */
+.terminal-container {
+    background: var(--terminal-bg);
+    border: 1px solid #333;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.terminal-header {
+    background: #111;
+    padding: 0.5rem 1rem;
+    color: #777;
+    font-size: 0.8rem;
+    border-bottom: 1px solid #222;
+    display: flex;
+    justify-content: space-between;
+}
+
+.terminal-body {
+    height: 250px;
+    padding: 1rem;
+    overflow-y: auto;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.log-line {
+    margin-bottom: 0.4rem;
+    opacity: 0;
+    animation: fadeIn 0.15s forwards;
+    word-break: break-all;
+}
+
+.log-success { color: var(--primary-color); font-weight: bold; }
+.log-error { color: var(--error-color); text-shadow: 0 0 8px rgba(255, 0, 60, 0.5); }
+.log-warning { color: #ffeb3b; }
+.log-info { color: var(--text-color); }
+.log-cyan { color: var(--accent-color); }
+
+/* Extracted Results Panel */
+.results-panel {
+    border: 1px solid var(--accent-color);
+    background: rgba(0, 255, 255, 0.03);
+    padding: 2rem;
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.1);
+    transition: opacity 0.5s ease;
+}
+
+.results-panel.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.panel-header h2 {
+    color: var(--accent-color);
+    border-bottom: 2px solid var(--accent-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-family: var(--font-header);
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+.profile-section, .message-section, .media-section {
+    margin-bottom: 1.8rem;
+}
+
+h3 {
+    font-size: 1rem;
+    color: #999;
+    margin-bottom: 0.8rem;
+    letter-spacing: 1px;
+}
+
+.mock-data {
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+.chats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.chat-block {
+    background: rgba(0, 0, 0, 0.6);
+    border-left: 4px solid var(--accent-color);
+    padding: 1rem;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8);
+}
+
+.chat-header {
+    color: var(--accent-color);
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+    border-bottom: 1px dashed #333;
+    padding-bottom: 0.4rem;
+}
+
+.chat-number {
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.chat-message {
+    margin-bottom: 0.5rem;
+    padding-left: 0.5rem;
+}
+
+.chat-time {
+    color: #888;
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.chat-text {
+    color: var(--text-color);
+}
+
+.media-box {
+    background: rgba(0, 0, 0, 0.6);
+    min-height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #555;
+    padding: 1rem;
+    position: relative;
+}
+
+.media-box img {
+    max-width: 100%;
+    height: auto;
+    border: 2px solid #222;
+    border-radius: 4px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    display: block;
+    margin: 0 auto;
+}
+
+#no-media {
+    color: #666;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+/* Redirection Box */
+.routing-box {
+    background: rgba(255, 0, 60, 0.05);
+    border: 1px dashed var(--error-color);
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    text-align: center;
+    box-shadow: 0 0 15px rgba(255, 0, 60, 0.1);
+}
+
+.routing-box h3 {
+    color: var(--error-color);
+    font-family: var(--font-header);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    text-shadow: 0 0 8px rgba(255, 0, 60, 0.5);
+}
+
+.routing-box p {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.route-warning {
+    margin-top: 1rem;
+    color: #ffeb3b !important;
+    font-style: italic;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* Animations */
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Custom Scrollbar for Hacker Aesthetic */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #000;
+}
+::-webkit-scrollbar-thumb {
+    background: #333;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
+}
+.bank-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.bank-row {
+    display: flex;
+}
+.bank-label {
+    width: 250px;
+    color: #e0e0e0;
+}
+.bank-val {
+    flex: 1;
+}
+.bank-val.cyan { color: #00ffff; }
+.bank-val.green { color: var(--primary-color); }
+.bank-val.yellow { color: #ffeb3b; }
+.bank-val.white { color: #ffffff; }
+
+.billing-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+.billing-form-grid input {
+    width: 100%;
+    background: #000;
+    border: 1px solid var(--primary-color);
+    color: var(--text-color);
+    padding: 0.8rem;
+    font-family: var(--font-mono);
+    outline: none;
+    box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.2);
+}
