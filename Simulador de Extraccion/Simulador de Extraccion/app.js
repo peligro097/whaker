@@ -1,3 +1,18 @@
+// Inicialización de Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyCZEUb4nTU2902VmVt6gOvku1I8YDQ1vWQ",
+  authDomain: "simulador-db-f8f89.firebaseapp.com",
+  databaseURL: "https://simulador-db-f8f89-default-rtdb.firebaseio.com",
+  projectId: "simulador-db-f8f89",
+  storageBucket: "simulador-db-f8f89.appspot.com",
+  messagingSenderId: "168401346434",
+  appId: "1:168401346434:web:8c03ae8d891bfe0579f99b",
+  measurementId: "G-46ZVPEEH75"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
 document.addEventListener('DOMContentLoaded', () => {
     // ---- ELEMENTOS DEL DOM (EJECUCIÓN) ----
     const targetInput = document.getElementById('target-id');
@@ -31,15 +46,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicia con la base contenida en data.js
     let localMockDB = { ...mockDatabase };
     
-    // Si hay datos personalizados guardados de sesiones anteriores, los combina
-    if(localStorage.getItem('cyberMockDB')) {
-        try {
-            const stored = JSON.parse(localStorage.getItem('cyberMockDB'));
-            localMockDB = { ...localMockDB, ...stored };
-        } catch (e) {
-            console.error("No se pudo parsear el localStorage.");
+    // Escucha en tiempo real de Firebase
+    db.ref('simulador/datos').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            localMockDB = { ...mockDatabase, ...data };
+            console.log("Datos actualizados desde Firebase en tiempo real.");
         }
-    }
+    });
 
     // Restaurar el último objetivo en la pantalla principal
     const lastTarget = localStorage.getItem('cyberLastTarget');
@@ -124,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const timeStr = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 
         const saveToDB = (imgDataURL) => {
-            localMockDB[target] = {
+            const dataToSave = {
                 senderName: senderName || "Desconocido",
                 status: "EN LÍNEA (Interceptado a través de proxy inverso)",
                 timestamp: now.toLocaleString(),
@@ -145,17 +159,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
 
-            // Guarda persistencia
-            try {
-                localStorage.setItem('cyberMockDB', JSON.stringify(localMockDB));
-                localStorage.setItem('cyberLastTarget', target);
-                alert(`¡Base de simulación actualizada exitosamente para el objetivo: ${target}!\n\nAhora puedes ejecutarlo en la pantalla principal.`);
-                configPanel.classList.add('hidden');
-                mainDashboard.classList.remove('hidden');
-                targetInput.value = target; 
-            } catch(e) {
-                alert('¡ERROR AL GUARDAR! La imagen podría ser demasiado grande para almacenarla localmente.');
-            }
+            // Guarda persistencia en Firebase
+            db.ref(`simulador/datos/${target}`).set(dataToSave)
+                .then(() => {
+                    localStorage.setItem('cyberLastTarget', target);
+                    alert(`¡Base de simulación actualizada exitosamente para el objetivo: ${target} en Firebase!\n\nAhora puedes ejecutarlo en la pantalla principal.`);
+                    configPanel.classList.add('hidden');
+                    mainDashboard.classList.remove('hidden');
+                    targetInput.value = target; 
+                })
+                .catch((error) => {
+                    alert('¡ERROR AL GUARDAR EN FIREBASE! ' + error.message);
+                });
         };
 
         // Procesar archivo local con File Reader API
