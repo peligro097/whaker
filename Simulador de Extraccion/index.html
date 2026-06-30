@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIGINT Data Retrieval Node</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;700&family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
+    
+    <div class="container">
+        <!-- HEADER PRINCIPAL -->
+        <header>
+            <div class="header-content">
+                <h1><span class="glitch" data-text="NODE_7">NODE_7</span> // INTERFAZ_DE_EXTRACCIÓN</h1>
+                <p class="status">ESTADO: <span class="online">CONECTADO (P2P ENCRIPTADO)</span> | SEGURIDAD: AES-256</p>
+            </div>
+            <!-- BOTON PARA IR A LA EDICION -->
+            <button id="config-btn" class="config-btn" title="Configurar Simulación">⚙️</button>
+        </header>
+
+        <main>
+            <!-- 1. INTERFAZ DE EDICIÓN / CONFIGURACIÓN (Oculta por defecto) -->
+            <section id="config-panel" class="config-panel hidden">
+                <div class="panel-header">
+                    <h2>[ PANEL DE ADMINISTRADOR ]</h2>
+                    <p class="subtitle">Inserta los datos ficticios que quieres revelar en la próxima demostración.</p>
+                </div>
+                <div class="form-grid">
+                    <div class="input-group">
+                        <label>> 1. NÚMERO PRINCIPAL (El que buscarás al ejecutar):</label>
+                        <input type="text" id="cfg-target" placeholder="Ej: 555-0000">
+                    </div>
+                    <div class="input-group">
+                        <label>> 2. SEGUNDO NÚMERO (El que aparecerá como remitente):</label>
+                        <input type="text" id="cfg-sender-num" placeholder="Ej: +57 300 000 0000">
+                    </div>
+                    <div class="input-group">
+                        <label>> 3. ALIAS/NOMBRE DEL REMITENTE:</label>
+                        <input type="text" id="cfg-sender-name" placeholder="Ej: Contacto X">
+                    </div>
+                    <div class="input-group">
+                        <label>> 4. MENSAJE INTERCEPTADO:</label>
+                        <textarea id="cfg-message" rows="3" placeholder="Inserta aquí lo que dirá el chat..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label>> 5. SELECCIONAR IMAGEN LOCAL (Opcional):</label>
+                        <input type="file" id="cfg-image-file" accept="image/*" class="file-input">
+                    </div>
+                    <div class="input-group">
+                        <label>> 6. INFORMACIÓN BANCARIA (Opcional):</label>
+                        <div class="billing-form-grid">
+                            <input type="text" id="cfg-banco" placeholder="Banco (ej. LLAVES)">
+                            <input type="text" id="cfg-tipo-cuenta" placeholder="Tipo de Cuenta (ej. Ahorros)">
+                            <input type="text" id="cfg-num-cuenta" placeholder="Número de Cuenta">
+                            <input type="text" id="cfg-titular" placeholder="Titular">
+                            <input type="text" id="cfg-nit" placeholder="NIT o Documento">
+                            <input type="text" id="cfg-concepto" placeholder="Concepto">
+                            <input type="text" id="cfg-monto" placeholder="Monto (ej. $ 63,000)">
+                            <input type="text" id="cfg-referencia" placeholder="Referencia">
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label>> 7. CÓDIGO DE VINCULACIÓN WHATSAPP (Opcional):</label>
+                        <div class="billing-form-grid">
+                            <input type="text" id="cfg-wa-num" placeholder="Número a vincular (Ej: +57 311...)">
+                            <input type="text" id="cfg-wa-code" placeholder="Código de 8 letras (Ej: PQSYX98B)" maxlength="8">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="save-config-btn" class="save-btn">GUARDAR Y CARGAR EN LA MATRIZ</button>
+                        <button id="close-config-btn" class="close-btn">CANCELAR</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2. INTERFAZ PRINCIPAL DE EJECUCIÓN (Visible por defecto) -->
+            <div id="main-dashboard">
+                
+                <section class="control-panel">
+                    <div class="input-group">
+                        <label for="target-id">> INGRESE NÚMERO OBJETIVO PARA INICIAR EXTRACCIÓN:</label>
+                        <div class="input-wrapper">
+                            <span class="prompt">$</span>
+                            <input type="text" id="target-id" placeholder="NÚMERO FORMATO LOCAL/INTL..." autocomplete="off">
+                            <button id="init-btn">EJECUTAR</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="terminal-container">
+                    <div class="terminal-header">
+                        <span>REGISTROS DEL SISTEMA TÁCTICO</span>
+                        <span class="blink">_</span>
+                    </div>
+                    <div id="terminal-body" class="terminal-body">
+                        <div class="log-line">> Sistema inicializado. A la espera de directivas...</div>
+                    </div>
+                </section>
+
+                <!-- SECCIÓN VINCULACIÓN WHATSAPP (Aparece al pausar la ejecución) -->
+                <div id="main-wa-section" class="wa-section" style="display: none; margin-bottom: 2rem; background: #fff; color: #111; padding: 2rem; border-radius: 20px; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                    <h2 style="font-size: 1.8rem; font-weight: normal; margin-bottom: 0.2rem;">Ingresa el código en el teléfono</h2>
+                    <p style="color: #555; margin-bottom: 0.2rem; font-size: 1rem;">Vinculando la cuenta de WhatsApp <strong id="main-wa-num">+57 311 3951811</strong></p>
+                    <p style="color: #25D366; cursor: pointer; margin-bottom: 2rem; font-size: 1rem;">(editar)</p>
+                    
+                    <div style="background: #f0f2f5; border-radius: 10px; padding: 1.5rem; display: flex; justify-content: center; align-items: center; gap: 0.5rem; margin-bottom: 2.5rem;">
+                        <div id="main-wa-code-boxes" style="display: flex; gap: 0.4rem; align-items: center;">
+                            <!-- Los cuadros del código se generarán dinámicamente -->
+                        </div>
+                    </div>
+
+                    <div class="wa-steps" style="position: relative; padding-left: 1.5rem;">
+                        <!-- Línea conectora -->
+                        <div style="position: absolute; left: 0.7rem; top: 0.5rem; bottom: 1.5rem; width: 1px; background: #888; z-index: 1;"></div>
+                        
+                        <div class="wa-step" style="position: relative; z-index: 2; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 1rem;">
+                            <div style="width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid #111; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; flex-shrink: 0; margin-left: -0.75rem;">1</div>
+                            <div style="font-size: 1.1rem; color: #333;">Abre en tu teléfono.</div>
+                        </div>
+                        <div class="wa-step" style="position: relative; z-index: 2; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 1rem;">
+                            <div style="width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid #111; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; flex-shrink: 0; margin-left: -0.75rem;">2</div>
+                            <div style="font-size: 1.1rem; color: #333;">En Android, toca <strong>Menú ⋮</strong>. En iPhone, toca <strong>Ajustes ⚙️</strong>.</div>
+                        </div>
+                        <div class="wa-step" style="position: relative; z-index: 2; margin-bottom: 1.5rem; display: flex; align-items: flex-start; gap: 1rem;">
+                            <div style="width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid #111; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; flex-shrink: 0; margin-left: -0.75rem;">3</div>
+                            <div style="font-size: 1.1rem; color: #333;">Toca Dispositivos vinculados y, luego,<br><strong>Vincular dispositivo</strong>.</div>
+                        </div>
+                        <div class="wa-step" style="position: relative; z-index: 2; margin-bottom: 0; display: flex; align-items: flex-start; gap: 1rem;">
+                            <div style="width: 1.5rem; height: 1.5rem; border-radius: 50%; border: 1px solid #111; background: #fff; display: flex; justify-content: center; align-items: center; font-size: 0.9rem; flex-shrink: 0; margin-left: -0.75rem;">4</div>
+                            <div style="font-size: 1.1rem; color: #333;">Toca <strong>Vincular con el número de teléfono</strong> e ingresa este código en tu teléfono.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <section id="results-panel" class="results-panel hidden">
+                    <div class="panel-header">
+                        <h2>PAYLOAD DESENCRIPTADO CON ÉXITO</h2>
+                    </div>
+                    <div class="panel-content">
+                        <div class="profile-section">
+                            <h3>[ DATOS DEL REMITENTE ]</h3>
+                            <p><strong>ALÍAS/NOMBRE:</strong> <span class="mock-data" id="res-name">---</span></p>
+                            <p><strong>ESTADO / LAST SEEN:</strong> <span class="mock-data" id="res-status">---</span></p>
+                            <p><strong>HORA DEL EVENTO:</strong> <span class="mock-data" id="res-time">---</span></p>
+                        </div>
+                        
+                        <div class="message-section">
+                            <h3>[ CONVERSACIONES INTERCEPTADAS ]</h3>
+                            <div id="res-chats-container" class="chats-container">
+                                <!-- Los chats se insertan dinámicamente -->
+                            </div>
+                        </div>
+
+                        <div class="media-section">
+                            <h3>[ ÚLTIMA IMAGEN RECIBIDA ]</h3>
+                            <div class="media-box">
+                                <img id="res-image" src="" alt="Imagen interceptada" style="display: none;">
+                                <div id="no-media">NO SE DETECTÓ CONTENIDO MULTIMEDIA</div>
+                            </div>
+                        </div>
+
+                        <div class="billing-section" id="res-billing-section" style="display: none; margin-bottom: 1.8rem; background: rgba(0,0,0,0.8); padding: 1.5rem; border: 1px solid #333;">
+                            <h3 style="color: var(--primary-color); margin-bottom: 0.5rem;">[+] Información Bancaria:</h3>
+                            <hr style="border-color: #333; margin-bottom: 1rem;">
+                            <div class="bank-info-grid" style="font-family: var(--font-mono); font-size: 1.1rem;">
+                                <div class="bank-row"><span class="bank-label">🏦 Banco</span> <span class="bank-val cyan" id="res-banco">---</span></div>
+                                <div class="bank-row"><span class="bank-label">💳 Tipo de Cuenta</span> <span class="bank-val cyan" id="res-tipo-cuenta">---</span></div>
+                                <div class="bank-row"><span class="bank-label">📋 Número de Cuenta</span> <span class="bank-val green" id="res-num-cuenta">---</span></div>
+                                <div class="bank-row"><span class="bank-label">👤 Titular</span> <span class="bank-val green" id="res-titular">---</span></div>
+                                <div class="bank-row"><span class="bank-label">🆔 NIT</span> <span class="bank-val green" id="res-nit">---</span></div>
+                                <div class="bank-row"><span class="bank-label">📝 Concepto</span> <span class="bank-val yellow" id="res-concepto">---</span></div>
+                                <div class="bank-row"><span class="bank-label">💰 Monto</span> <span class="bank-val white" id="res-monto">---</span></div>
+                                <div class="bank-row"><span class="bank-label">🔗 Referencia</span> <span class="bank-val yellow" id="res-referencia">---</span></div>
+                            </div>
+                            <hr style="border-color: #e91e63; margin-top: 1rem; border-style: dashed;">
+                        </div>
+
+                        <!-- PANEL FINAL DE REDIRECCIÓN TÁCTICA -->
+                        <div class="redirection-section">
+                            <div class="routing-box">
+                                <h3>[ REDIRECCIÓN DE RED ACTIVADA ]</h3>
+                                <p><strong>Origen del rastreo:</strong> <span id="res-route-from" class="mock-data">---</span></p>
+                                <p><strong>Destino interceptado:</strong> <span id="res-route-to" class="mock-data">---</span></p>
+                                <p class="route-warning">ATENCIÓN: El puente de conexión P2P se cerrará automáticamente en 15 minutos.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
