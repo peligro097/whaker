@@ -1,12 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>PRUEBA DE CONEXIÓN</title>
+    <title>PRUEBA DEFINITIVA</title>
     <style>
-        body { background-color: red; color: white; text-align: center; padding-top: 50px; font-size: 30px; }
+        body { background-color: red; color: white; font-family: sans-serif; text-align: center; padding-top: 50px; }
     </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
 </head>
 <body>
-    <h1>¡SI ESTO NO ESTÁ ROJO, EL SERVIDOR NO ESTÁ LEYENDO GITHUB!</h1>
+    <h1>¡EL CÓDIGO ESTÁ FUNCIONANDO!</h1>
+    <p id="status">Intentando conectar con Firebase...</p>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCZEUb4nTU2902VmVt6gOvku1I8YDQ1vWQ",
+            authDomain: "simulador-db-f8f89.firebaseapp.com",
+            databaseURL: "https://simulador-db-f8f89-default-rtdb.firebaseio.com",
+            projectId: "simulador-db-f8f89",
+            storageBucket: "simulador-db-f8f89.appspot.com",
+            messagingSenderId: "168401346434",
+            appId: "1:168401346434:web:8c03ae8d891bfe0579f99b"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        db.ref('simulador/datos').once('value')
+            .then((snapshot) => {
+                document.getElementById('status').innerText = "CONEXIÓN EXITOSA: " + JSON.stringify(snapshot.val());
+            })
+            .catch((error) => {
+                document.getElementById('status').innerText = "ERROR: " + error.message;
+            });
+    </script>
 </body>
 </html>
